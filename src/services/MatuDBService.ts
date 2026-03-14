@@ -7,17 +7,18 @@ dotenv.config();
 
 const MATUDB_URL = process.env.MATUDB_URL!;
 const MATUDB_PROJECT_ID = process.env.MATUDB_PROJECT_ID!;
-const MATUDB_API_SECRET = process.env.MATUDB_API_SECRET!;
+// Acepta MATUDB_API_SECRET o MATUDB_API_KEY (mismo valor en MatuDB)
+const MATUDB_API_KEY = process.env.MATUDB_API_SECRET || process.env.MATUDB_API_KEY!;
 
-if (!MATUDB_URL || !MATUDB_PROJECT_ID || !MATUDB_API_SECRET) {
-    throw new Error('MATUDB_URL, MATUDB_PROJECT_ID y MATUDB_API_SECRET son requeridos en .env');
+if (!MATUDB_URL || !MATUDB_PROJECT_ID || !MATUDB_API_KEY) {
+    throw new Error('MATUDB_URL, MATUDB_PROJECT_ID y MATUDB_API_SECRET (o MATUDB_API_KEY) son requeridos en .env');
 }
 
 // Cliente único con service key
 export const adminClient: any = createClient({
     url: MATUDB_URL,
     projectId: MATUDB_PROJECT_ID,
-    apiKey: MATUDB_API_SECRET
+    apiKey: MATUDB_API_KEY
 });
 
 export class MatuDBService {

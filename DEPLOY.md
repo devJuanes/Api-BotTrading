@@ -1,48 +1,48 @@
-# Subir BotTrading API al servidor
+# Subir Api-BotTrading al servidor (trading.deportivospro.com)
 
-## 1. En tu PC (primera vez)
+## Requisito previo
 
-```bash
-cd C:\Users\Usuario\Desktop\BotTrading
+En tu proveedor de DNS (Cloudflare, GoDaddy, etc.) crea un registro **A**:
+- **Nombre:** `trading`
+- **Valor:** IP de tu servidor (la misma que usa factory.deportivospro.com)
 
-# Inicializar repo si aún no existe
-git init
-git add .
-git commit -m "BotTrading API + PM2 + nginx"
+---
 
-# Crear repo en GitHub/GitLab y enlazar
-git remote add origin https://github.com/TU_USUARIO/bot-trading.git
-git branch -M main
-git push -u origin main
-```
+## Pasos en el servidor (por SSH)
 
-## 2. En el servidor (SSH)
-
-### Clonar e instalar
+### 1. Clonar el repo
 
 ```bash
 cd ~/apps
-git clone https://github.com/TU_USUARIO/bot-trading.git
-cd bot-trading
+git clone https://github.com/devJuanes/Api-BotTrading.git
+cd Api-BotTrading
 ```
 
-### Configurar .env
+### 2. Configurar variables de entorno
 
 ```bash
 cp .env.example .env
 nano .env
 ```
 
-Rellena al menos:
+Rellena al menos (usa tu proyecto MatuDB del bot):
 
-- `PORT=4060`
-- `MATUDB_URL=...`
-- `MATUDB_PROJECT_ID=...`
-- `MATUDB_API_KEY=...` (o `MATUDB_API_SECRET` si tu código lo usa)
-- `WHATSAPP_ENABLED=true` o `false`
-- `WHATSAPP_SESSION=trading-main`
+```
+PORT=4060
+NODE_ENV=production
 
-### Build y arrancar con PM2
+MATUDB_URL=https://matudb-api.huakar.cloud
+MATUDB_PROJECT_ID=tu_project_id
+MATUDB_API_KEY=tu_api_key
+MATUDB_API_SECRET=tu_api_secret
+
+WHATSAPP_ENABLED=true
+WHATSAPP_SESSION=trading-main
+```
+
+Guarda (Ctrl+O, Enter, Ctrl+X).
+
+### 3. Instalar, compilar y arrancar con PM2
 
 ```bash
 npm install
@@ -52,10 +52,13 @@ pm2 save
 pm2 startup
 ```
 
-### Nginx + SSL (subdominio trading.deportivospro.com)
+(Copia y ejecuta el comando que te muestre `pm2 startup` si es la primera vez.)
+
+### 4. Nginx: configurar subdominio trading.deportivospro.com
+
+Primero solo HTTP (para que Certbot pueda validar):
 
 ```bash
-# Copiar config (primero solo HTTP para que certbot funcione)
 sudo tee /etc/nginx/sites-available/trading.deportivospro.com << 'NGINX'
 server {
     listen 80;
@@ -78,27 +81,43 @@ NGINX
 
 sudo ln -sf /etc/nginx/sites-available/trading.deportivospro.com /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
+```
+
+### 5. Obtener SSL con Certbot
+
+```bash
 sudo certbot --nginx -d trading.deportivospro.com
 ```
 
-**Antes de certbot:** crea el registro DNS tipo `A` para `trading.deportivospro.com` apuntando a la IP del servidor.
+Sigue las preguntas (email, aceptar términos). Certbot dejará HTTPS activo.
 
-## 3. Actualizar la API en el futuro
+### 6. Comprobar
+
+- API: **https://trading.deportivospro.com/api/v1/health**
+- En Prediction Factory, en `.env` de producción, pon:  
+  `VITE_TRADING_API_URL=https://trading.deportivospro.com`  
+  y vuelve a hacer build y desplegar la fábrica.
+
+---
+
+## Actualizar la API en el futuro
 
 En el servidor:
 
 ```bash
-cd ~/apps/bot-trading
+cd ~/apps/Api-BotTrading
 git pull
 npm install
 npm run build
 pm2 reload bot-trading
 ```
 
+---
+
 ## Comandos útiles
 
 | Comando | Descripción |
 |--------|-------------|
-| `pm2 status` | Ver procesos |
+| `pm2 status` | Ver procesos (bot-trading en puerto 4060) |
 | `pm2 logs bot-trading` | Ver logs en vivo |
 | `pm2 restart bot-trading` | Reiniciar |
